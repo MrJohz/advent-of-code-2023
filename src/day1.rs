@@ -26,7 +26,7 @@ fn calibration_value(line: &[u8], parser: impl Fn(&[u8], &mut usize) -> Option<u
 fn parse_only_digits(line: &[u8], pos: &mut usize) -> Option<u8> {
     while *pos < line.len() {
         *pos += 1;
-        if let c @ b'0'..=b'9' = line[*pos - 1] {
+        if let c @ b'1'..=b'9' = line[*pos - 1] {
             return Some(c - b'0');
         }
     }
@@ -37,55 +37,43 @@ fn parse_only_digits(line: &[u8], pos: &mut usize) -> Option<u8> {
 #[inline(always)]
 fn parse_named_numbers(line: &[u8], pos: &mut usize) -> Option<u8> {
     while *pos < line.len() {
-        *pos += 1;
-        match line[*pos - 1] {
-            c @ b'0'..=b'9' => return Some(c - b'0'),
-            b'o' => {
-                if line.len() > *pos + 1 && &line[*pos..=*pos + 1] == b"ne" {
-                    *pos += 1;
+        match line[*pos] {
+            c @ b'1'..=b'9' => {
+                *pos += 1;
+                return Some(c - b'0');
+            }
+            _ => {
+                if line[*pos..].starts_with(b"one") {
+                    *pos += 2;
                     return Some(1);
-                }
-            }
-            b't' => {
-                if line.len() > *pos + 1 && &line[*pos..=*pos + 1] == b"wo" {
-                    *pos += 1;
+                } else if line[*pos..].starts_with(b"two") {
+                    *pos += 2;
                     return Some(2);
-                } else if line.len() > *pos + 3 && &line[*pos..=*pos + 3] == b"hree" {
-                    *pos += 3;
+                } else if line[*pos..].starts_with(b"three") {
+                    *pos += 4;
                     return Some(3);
-                }
-            }
-            b'f' => {
-                if line.len() > *pos + 2 && &line[*pos..=*pos + 2] == b"our" {
-                    *pos += 3;
+                } else if line[*pos..].starts_with(b"four") {
+                    *pos += 4;
                     return Some(4);
-                } else if line.len() > *pos + 2 && &line[*pos..=*pos + 2] == b"ive" {
-                    *pos += 2;
+                } else if line[*pos..].starts_with(b"five") {
+                    *pos += 3;
                     return Some(5);
-                }
-            }
-            b's' => {
-                if line.len() > *pos + 1 && &line[*pos..=*pos + 1] == b"ix" {
-                    *pos += 2;
+                } else if line[*pos..].starts_with(b"six") {
+                    *pos += 3;
                     return Some(6);
-                } else if line.len() > *pos + 3 && &line[*pos..=*pos + 3] == b"even" {
-                    *pos += 3;
+                } else if line[*pos..].starts_with(b"seven") {
+                    *pos += 4;
                     return Some(7);
-                }
-            }
-            b'e' => {
-                if line.len() > *pos + 3 && &line[*pos..=*pos + 3] == b"ight" {
-                    *pos += 3;
+                } else if line[*pos..].starts_with(b"eight") {
+                    *pos += 4;
                     return Some(8);
-                }
-            }
-            b'n' => {
-                if line.len() > *pos + 2 && &line[*pos..=*pos + 2] == b"ine" {
-                    *pos += 2;
+                } else if line[*pos..].starts_with(b"nine") {
+                    *pos += 3;
                     return Some(9);
+                } else {
+                    *pos += 1;
                 }
             }
-            _ => {}
         }
     }
 
@@ -108,7 +96,6 @@ pub mod tests {
         assert_eq!(parse_named_numbers(b"7", &mut 0), Some(7));
         assert_eq!(parse_named_numbers(b"8", &mut 0), Some(8));
         assert_eq!(parse_named_numbers(b"9", &mut 0), Some(9));
-        assert_eq!(parse_named_numbers(b"0", &mut 0), Some(0));
     }
 
     #[test]

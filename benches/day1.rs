@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn day1(c: &mut Criterion) {
     let text = aoc_2023::utils::load_real(1);
     c.bench_function("day 1 part 1", |b| {
         b.iter(|| aoc_2023::day1::day1_part1(black_box(&text)))
@@ -10,5 +12,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group! {
+    name = benches;
+    config = Criterion::default()
+        .sample_size(500)
+        .measurement_time(Duration::from_secs(30));
+    targets = day1
+}
 criterion_main!(benches);
