@@ -1,83 +1,119 @@
 pub fn day1_part1(input: &[u8]) -> u32 {
     input
         .split(|b| *b == b'\n')
-        .map(|line| calibration_value(line, parse_only_digits))
+        .map(|line| calibration_value(line, parse_digits_forwards, parse_digits_backwards))
         .sum()
 }
 
 pub fn day1_part2(input: &[u8]) -> u32 {
     input
         .split(|b| *b == b'\n')
-        .map(|line| calibration_value(line, parse_named_numbers))
+        .map(|line| calibration_value(line, parse_words_forwards, parse_words_backwards))
         .sum()
 }
 
-fn calibration_value(line: &[u8], parser: impl Fn(&[u8], &mut usize) -> Option<u8>) -> u32 {
-    let mut pos = 0;
-    let start = parser(line, &mut pos).unwrap();
-    let mut end = start;
-    while let Some(number) = parser(line, &mut pos) {
-        end = number;
-    }
+#[inline(always)]
+fn calibration_value(
+    line: &[u8],
+    parse_forwards: impl Fn(&[u8]) -> u8,
+    parse_backwards: impl Fn(&[u8]) -> u8,
+) -> u32 {
+    let start = parse_forwards(line);
+    let end = parse_backwards(line);
     (start * 10 + end).into()
 }
 
 #[inline(always)]
-fn parse_only_digits(line: &[u8], pos: &mut usize) -> Option<u8> {
-    while *pos < line.len() {
-        *pos += 1;
-        if let c @ b'1'..=b'9' = line[*pos - 1] {
-            return Some(c - b'0');
+fn parse_digits_forwards(line: &[u8]) -> u8 {
+    let mut pos = 0;
+    loop {
+        if let c @ b'1'..=b'9' = line[pos] {
+            return c - b'0';
         }
-    }
 
-    None
+        pos += 1;
+    }
 }
 
 #[inline(always)]
-fn parse_named_numbers(line: &[u8], pos: &mut usize) -> Option<u8> {
-    while *pos < line.len() {
-        match line[*pos] {
+fn parse_digits_backwards(line: &[u8]) -> u8 {
+    let mut pos = line.len();
+    loop {
+        pos -= 1;
+        if let c @ b'1'..=b'9' = line[pos] {
+            return c - b'0';
+        }
+    }
+}
+
+#[inline(always)]
+fn parse_words_forwards(line: &[u8]) -> u8 {
+    let mut pos = 0;
+    loop {
+        match line[pos] {
             c @ b'1'..=b'9' => {
-                *pos += 1;
-                return Some(c - b'0');
+                return c - b'0';
             }
             _ => {
-                if line[*pos..].starts_with(b"one") {
-                    *pos += 2;
-                    return Some(1);
-                } else if line[*pos..].starts_with(b"two") {
-                    *pos += 2;
-                    return Some(2);
-                } else if line[*pos..].starts_with(b"three") {
-                    *pos += 4;
-                    return Some(3);
-                } else if line[*pos..].starts_with(b"four") {
-                    *pos += 4;
-                    return Some(4);
-                } else if line[*pos..].starts_with(b"five") {
-                    *pos += 3;
-                    return Some(5);
-                } else if line[*pos..].starts_with(b"six") {
-                    *pos += 3;
-                    return Some(6);
-                } else if line[*pos..].starts_with(b"seven") {
-                    *pos += 4;
-                    return Some(7);
-                } else if line[*pos..].starts_with(b"eight") {
-                    *pos += 4;
-                    return Some(8);
-                } else if line[*pos..].starts_with(b"nine") {
-                    *pos += 3;
-                    return Some(9);
+                if line[pos..].starts_with(b"one") {
+                    return 1;
+                } else if line[pos..].starts_with(b"two") {
+                    return 2;
+                } else if line[pos..].starts_with(b"three") {
+                    return 3;
+                } else if line[pos..].starts_with(b"four") {
+                    return 4;
+                } else if line[pos..].starts_with(b"five") {
+                    return 5;
+                } else if line[pos..].starts_with(b"six") {
+                    return 6;
+                } else if line[pos..].starts_with(b"seven") {
+                    return 7;
+                } else if line[pos..].starts_with(b"eight") {
+                    return 8;
+                } else if line[pos..].starts_with(b"nine") {
+                    return 9;
                 } else {
-                    *pos += 1;
+                    pos += 1;
                 }
             }
         }
     }
+}
 
-    None
+#[inline(always)]
+fn parse_words_backwards(line: &[u8]) -> u8 {
+    let mut pos = line.len();
+    loop {
+        match line[pos - 1] {
+            c @ b'1'..=b'9' => {
+                return c - b'0';
+            }
+            _ => {
+                if line[..pos].ends_with(b"one") {
+                    return 1;
+                } else if line[..pos].ends_with(b"two") {
+                    return 2;
+                } else if line[..pos].ends_with(b"three") {
+                    return 3;
+                } else if line[..pos].ends_with(b"four") {
+                    return 4;
+                } else if line[..pos].ends_with(b"five") {
+                    return 5;
+                } else if line[..pos].ends_with(b"six") {
+                    return 6;
+                } else if line[..pos].ends_with(b"seven") {
+                    return 7;
+                } else if line[..pos].ends_with(b"eight") {
+                    return 8;
+                } else if line[..pos].ends_with(b"nine") {
+                    return 9;
+                } else {
+                    pos -= 1;
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -87,95 +123,102 @@ pub mod tests {
 
     #[test]
     fn parsing_standard_numbers_produces_correct_values() {
-        assert_eq!(parse_named_numbers(b"1", &mut 0), Some(1));
-        assert_eq!(parse_named_numbers(b"2", &mut 0), Some(2));
-        assert_eq!(parse_named_numbers(b"3", &mut 0), Some(3));
-        assert_eq!(parse_named_numbers(b"4", &mut 0), Some(4));
-        assert_eq!(parse_named_numbers(b"5", &mut 0), Some(5));
-        assert_eq!(parse_named_numbers(b"6", &mut 0), Some(6));
-        assert_eq!(parse_named_numbers(b"7", &mut 0), Some(7));
-        assert_eq!(parse_named_numbers(b"8", &mut 0), Some(8));
-        assert_eq!(parse_named_numbers(b"9", &mut 0), Some(9));
+        assert_eq!(parse_words_forwards(b"1"), 1);
+        assert_eq!(parse_words_forwards(b"2"), 2);
+        assert_eq!(parse_words_forwards(b"3"), 3);
+        assert_eq!(parse_words_forwards(b"4"), 4);
+        assert_eq!(parse_words_forwards(b"5"), 5);
+        assert_eq!(parse_words_forwards(b"6"), 6);
+        assert_eq!(parse_words_forwards(b"7"), 7);
+        assert_eq!(parse_words_forwards(b"8"), 8);
+        assert_eq!(parse_words_forwards(b"9"), 9);
     }
 
     #[test]
     fn parsing_named_numbers_produces_correct_values() {
-        assert_eq!(parse_named_numbers(b"one", &mut 0), Some(1));
-        assert_eq!(parse_named_numbers(b"two", &mut 0), Some(2));
-        assert_eq!(parse_named_numbers(b"three", &mut 0), Some(3));
-        assert_eq!(parse_named_numbers(b"four", &mut 0), Some(4));
-        assert_eq!(parse_named_numbers(b"five", &mut 0), Some(5));
-        assert_eq!(parse_named_numbers(b"six", &mut 0), Some(6));
-        assert_eq!(parse_named_numbers(b"seven", &mut 0), Some(7));
-        assert_eq!(parse_named_numbers(b"eight", &mut 0), Some(8));
-        assert_eq!(parse_named_numbers(b"nine", &mut 0), Some(9));
+        assert_eq!(parse_words_forwards(b"one"), 1);
+        assert_eq!(parse_words_forwards(b"two"), 2);
+        assert_eq!(parse_words_forwards(b"three"), 3);
+        assert_eq!(parse_words_forwards(b"four"), 4);
+        assert_eq!(parse_words_forwards(b"five"), 5);
+        assert_eq!(parse_words_forwards(b"six"), 6);
+        assert_eq!(parse_words_forwards(b"seven"), 7);
+        assert_eq!(parse_words_forwards(b"eight"), 8);
+        assert_eq!(parse_words_forwards(b"nine"), 9);
     }
 
     #[test]
-    fn parsing_partial_named_numbers_produces_no_results() {
-        assert_eq!(parse_named_numbers(b"on", &mut 0), None);
-        assert_eq!(parse_named_numbers(b"tw", &mut 0), None);
-        assert_eq!(parse_named_numbers(b"t", &mut 0), None);
+    fn parsing_standard_numbers_backwards_produces_correct_values() {
+        assert_eq!(parse_words_backwards(b"1"), 1);
+        assert_eq!(parse_words_backwards(b"2"), 2);
+        assert_eq!(parse_words_backwards(b"3"), 3);
+        assert_eq!(parse_words_backwards(b"4"), 4);
+        assert_eq!(parse_words_backwards(b"5"), 5);
+        assert_eq!(parse_words_backwards(b"6"), 6);
+        assert_eq!(parse_words_backwards(b"7"), 7);
+        assert_eq!(parse_words_backwards(b"8"), 8);
+        assert_eq!(parse_words_backwards(b"9"), 9);
     }
 
     #[test]
-    fn parsing_named_numbers_consumes_the_correct_number_of_bytes() {
-        let mut pos = 0;
-        let text = b"onetwothreefourfivesixseveneightnine";
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 2);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 5);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 10);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 15);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 18);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 22);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 26);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 31);
-        parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 35);
-    }
-
-    #[test]
-    fn parsing_nonsense_digits_consumes_the_correct_number_of_bytes() {
-        let mut pos = 0;
-        let text = b"otwtwo";
-        let parsed = parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 5);
-        assert_eq!(parsed, Some(2));
-    }
-
-    #[test]
-    fn parsing_conjoined_works_successfully() {
-        let mut pos = 0;
-        let text = b"oneight";
-        let parsed = parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 2);
-        assert_eq!(parsed, Some(1));
-        let parsed = parse_named_numbers(text, &mut pos);
-        assert_eq!(pos, 6);
-        assert_eq!(parsed, Some(8));
+    fn parsing_named_numbers_backwards_produces_correct_values() {
+        assert_eq!(parse_words_backwards(b"one"), 1);
+        assert_eq!(parse_words_backwards(b"two"), 2);
+        assert_eq!(parse_words_backwards(b"three"), 3);
+        assert_eq!(parse_words_backwards(b"four"), 4);
+        assert_eq!(parse_words_backwards(b"five"), 5);
+        assert_eq!(parse_words_backwards(b"six"), 6);
+        assert_eq!(parse_words_backwards(b"seven"), 7);
+        assert_eq!(parse_words_backwards(b"eight"), 8);
+        assert_eq!(parse_words_backwards(b"nine"), 9);
     }
 
     #[test]
     fn calibration_value_produces_expected_result_with_digits() {
-        assert_eq!(calibration_value(b"1234", parse_only_digits), 14);
-        assert_eq!(calibration_value(b"91212129", parse_only_digits), 99);
-        assert_eq!(calibration_value(b"1abc2", parse_only_digits), 12);
-        assert_eq!(calibration_value(b"1", parse_only_digits), 11);
+        assert_eq!(
+            calibration_value(b"1234", parse_digits_forwards, parse_digits_backwards),
+            14
+        );
+        assert_eq!(
+            calibration_value(b"91212129", parse_digits_forwards, parse_digits_backwards),
+            99
+        );
+        assert_eq!(
+            calibration_value(b"1abc2", parse_digits_forwards, parse_digits_backwards),
+            12
+        );
+        assert_eq!(
+            calibration_value(b"1", parse_digits_forwards, parse_digits_backwards),
+            11
+        );
     }
 
     #[test]
     fn calibration_value_produces_expected_result_with_named_numbers() {
-        assert_eq!(calibration_value(b"two1nine", parse_named_numbers), 29);
-        assert_eq!(calibration_value(b"rkonedbbf9hq", parse_named_numbers), 19);
-        assert_eq!(calibration_value(b"1", parse_named_numbers), 11);
+        assert_eq!(
+            calibration_value(b"two1nine", parse_words_forwards, parse_words_backwards),
+            29
+        );
+        assert_eq!(
+            calibration_value(b"rkonedbbf9hq", parse_words_forwards, parse_words_backwards),
+            19
+        );
+        assert_eq!(
+            calibration_value(b"1", parse_words_forwards, parse_words_backwards),
+            11
+        );
+        assert_eq!(
+            calibration_value(b"one", parse_words_forwards, parse_words_backwards),
+            11
+        );
+        assert_eq!(
+            calibration_value(b"1two", parse_words_forwards, parse_words_backwards),
+            12
+        );
+        assert_eq!(
+            calibration_value(b"nine9", parse_words_forwards, parse_words_backwards),
+            99
+        );
     }
 
     #[test]
