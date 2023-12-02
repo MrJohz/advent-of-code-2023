@@ -1,15 +1,30 @@
 pub fn day1_part1(input: &[u8]) -> u32 {
-    input
-        .split(|b| *b == b'\n')
-        .map(|line| calibration_value(line, parse_digits_forwards, parse_digits_backwards))
-        .sum()
+    let mut start = 0;
+    let mut sum = 0;
+    for end in memchr::memchr_iter(b'\n', input) {
+        sum += calibration_value(
+            &input[start..end],
+            parse_digits_forwards,
+            parse_digits_backwards,
+        );
+        start = end;
+    }
+
+    sum
 }
 
 pub fn day1_part2(input: &[u8]) -> u32 {
-    input
-        .split(|b| *b == b'\n')
-        .map(|line| calibration_value(line, parse_words_forwards, parse_words_backwards))
-        .sum()
+    let mut start = 0;
+    let mut sum = 0;
+    for end in memchr::memchr_iter(b'\n', input) {
+        sum += calibration_value(
+            &input[start..end],
+            parse_words_forwards,
+            parse_words_backwards,
+        );
+        start = end;
+    }
+    sum
 }
 
 #[inline(always)]
@@ -223,8 +238,8 @@ pub mod tests {
 
     #[test]
     fn day1_part1_sums_all_lines() {
-        assert_eq!(day1_part1(b"14"), 14);
-        assert_eq!(day1_part1(b"14\n23"), 14 + 23);
+        assert_eq!(day1_part1(b"14\n"), 14);
+        assert_eq!(day1_part1(b"14\n23\n"), 14 + 23);
     }
 
     #[test]
