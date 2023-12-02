@@ -1,3 +1,5 @@
+use std::hint::unreachable_unchecked;
+
 pub fn day2_part1(input: &[u8]) -> u32 {
     let mut index = 0;
     let mut id_sum = 0;
@@ -75,7 +77,8 @@ fn minimal_cubes(input: &[u8]) -> ((u8, u8, u8), usize) {
                 reds = reds.max(n);
                 index += 3;
             }
-            _ => unreachable!("not a colour {input}@{index}", input = input[index] as char),
+            // safety: this is only safe if the input is guaranteed to match the format of the AOC input
+            _ => unsafe { unreachable_unchecked() }, // _ => unreachable!("not a colour {input}@{index}", input = input[index] as char),
         }
         // account for comma/semicolon combo
         match input.get(index) {
@@ -114,7 +117,8 @@ fn is_large_game(input: &[u8]) -> (bool, usize) {
                     index += 3
                 }
             }
-            _ => unreachable!("not a colour {input}@{index}", input = input[index] as char),
+            // safety: this is only safe if the input is guaranteed to match the format of the AOC input
+            _ => unsafe { unreachable_unchecked() }, // _ => unreachable!("not a colour {input}@{index}", input = input[index] as char),
         }
         // account for comma/semicolon combo
         match input.get(index) {
