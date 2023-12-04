@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Position {
     x: i16,
@@ -14,18 +16,8 @@ impl Position {
         self
     }
 
-    fn jump_up(mut self, steps: i16) -> Self {
-        self.y -= steps;
-        self
-    }
-
     fn down(mut self) -> Self {
         self.y += 1;
-        self
-    }
-
-    fn jump_down(mut self, steps: i16) -> Self {
-        self.y += steps;
         self
     }
 
@@ -34,18 +26,8 @@ impl Position {
         self
     }
 
-    fn jump_left(mut self, steps: i16) -> Self {
-        self.x -= steps;
-        self
-    }
-
     fn right(mut self) -> Self {
         self.x += 1;
-        self
-    }
-
-    fn jump_right(mut self, steps: i16) -> Self {
-        self.x += steps;
         self
     }
 }
@@ -82,44 +64,43 @@ impl<'a> Grid<'a> {
         }
     }
 
-    fn numbers(&self) -> impl Iterator<Item = (u32, Region)> + '_ {
-        Numbers {
-            input: self.grid,
-            pos: 0,
-        }
-        .map(|(n, (index, length))| {
-            (
-                n,
-                Region::new(
-                    Position::new(
-                        (index % (self.width + 1)).try_into().unwrap(),
-                        (index / (self.width + 1)).try_into().unwrap(),
-                    ),
-                    length,
-                ),
-            )
-        })
+    fn slice_after(&self, index: Position) -> &[u8] {
+        let x = usize::try_from(index.x).unwrap();
+        let y = usize::try_from(index.y).unwrap();
+        &self.grid[(y * (self.width + 1) + x)..]
     }
-}
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct Region {
-    index: Position,
-    length: usize,
-}
-
-impl Region {
-    fn new(index: Position, length: usize) -> Self {
-        Self { index, length }
+    fn symbols(&self) -> impl Iterator<Item = (u8, Position)> + '_ {
+        self.grid
+            .iter()
+            .enumerate()
+            .map(|each| {
+                dbg!(each.0, *each.1 as char);
+                each
+            })
+            .filter(|(_, c)| is_symbol(c))
+            .map(|(index, c)| {
+                let position = Position::new(
+                    dbg!(dbg!(index) % dbg!(self.width + 1)).try_into().unwrap(),
+                    dbg!(index / (self.width + 1)).try_into().unwrap(),
+                );
+                dbg!(index, position);
+                (*c, position)
+            })
     }
 }
 
 pub fn day3_part1(input: &[u8]) -> u32 {
     let grid = Grid::new(input);
-    grid.numbers()
-        .filter(|(_, region)| touching_symbol(&grid, *region))
-        .map(|(n, _)| n)
-        .sum()
+    let mut sum = 0;
+    for (_, position) in grid.symbols() {
+        sum += numbers_for_symbol(&grid, position)
+            .iter()
+            .map(|(n, _)| n)
+            .sum::<u32>();
+    }
+
+    sum
 }
 
 pub fn day3_part2(_: &[u8]) -> u32 {
@@ -138,50 +119,78 @@ fn parse_number(input: &[u8]) -> (u32, usize) {
     (sum, pos)
 }
 
-#[derive(Debug)]
-struct Numbers<'a> {
-    input: &'a [u8],
-    pos: usize,
+fn is_symbol(char: &u8) -> bool {
+    !matches!(char, b'.' | b'0'..=b'9' | b'\n')
 }
 
-impl<'a> Iterator for Numbers<'a> {
-    type Item = (u32, (usize, usize));
+fn numbers_for_symbol(input: &Grid<'_>, position: Position) -> ArrayVec<(u32, Position), 6> {
+    let mut array = ArrayVec::new();
 
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match self.input.get(self.pos) {
-                Some(b'0'..=b'9') => {
-                    let (value, length) = parse_number(&self.input[self.pos..]);
-                    let result = Some((value, (self.pos, length)));
-                    self.pos += length;
-                    break result;
-                }
-                None => break None,
-                _ => self.pos += 1,
+    if let b'0'..=b'9' = *input.get(position.left()) {
+        let start = find_number_start(input, position.left());
+        let (value, _) = parse_number(input.slice_after(start));
+        array.push((value, start));
+    }
+
+    if let b'0'..=b'9' = *input.get(position.right()) {
+        let (value, _) = parse_number(input.slice_after(position.right()));
+        array.push((value, position.right()));
+    }
+
+    match *input.get(position.up()) {
+        b'0'..=b'9' => {
+            let start = find_number_start(input, position.up());
+            let (value, _) = parse_number(input.slice_after(start));
+            array.push((value, start));
+        }
+        _ => {
+            let topleft = position.up().left();
+            if let b'0'..=b'9' = *input.get(topleft) {
+                let start = find_number_start(input, topleft);
+                let (value, _) = parse_number(input.slice_after(start));
+                array.push((value, start));
+            }
+            let topright = position.up().right();
+            if let b'0'..=b'9' = *input.get(topright) {
+                let (value, _) = parse_number(input.slice_after(topright));
+                array.push((value, topright));
             }
         }
     }
-}
 
-fn is_symbol(char: &u8) -> bool {
-    !matches!(char, b'.' | b'0'..=b'9')
-}
-
-fn touching_symbol(input: &Grid<'_>, region: Region) -> bool {
-    let Region { index, length } = region;
-
-    let mut top_row = index.up().left();
-    let mut bottom_row = index.down().left();
-    for _ in 0..(length + 2) {
-        if is_symbol(input.get(top_row)) || is_symbol(input.get(bottom_row)) {
-            return true;
+    match *input.get(position.down()) {
+        b'0'..=b'9' => {
+            let start = find_number_start(input, position.down());
+            let (value, _) = parse_number(input.slice_after(start));
+            array.push((value, start));
         }
-        top_row = top_row.right();
-        bottom_row = bottom_row.right();
+        _ => {
+            let bottomleft = position.down().left();
+            if let b'0'..=b'9' = *input.get(bottomleft) {
+                let start = find_number_start(input, bottomleft);
+                let (value, _) = parse_number(input.slice_after(start));
+                array.push((value, start));
+            }
+            let bottomright = position.down().right();
+            if let b'0'..=b'9' = *input.get(bottomright) {
+                let (value, _) = parse_number(input.slice_after(bottomright));
+                array.push((value, bottomright));
+            }
+        }
     }
 
-    is_symbol(input.get(index.left()))
-        || is_symbol(input.get(index.jump_right(length.try_into().unwrap())))
+    array
+}
+
+fn find_number_start(grid: &Grid<'_>, mut position: Position) -> Position {
+    loop {
+        let new = position.left();
+        if let b'0'..=b'9' = *grid.get(new) {
+            position = new;
+        } else {
+            break position;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -197,15 +206,133 @@ pub mod tests {
         assert_eq!(parse_number(b"12*"), (12, 2));
     }
 
-    // #[test]
-    // fn test_parsing_all_numbers_returns_iterator_of_numbers() {
-    //     let mut numbers = find_numbers(b"123..345**6\n123\n");
-    //     assert_eq!(numbers.next(), Some((123, Region::new(0, 3))));
-    //     assert_eq!(numbers.next(), Some((345, Region::new(5, 3))));
-    //     assert_eq!(numbers.next(), Some((6, Region::new(10, 1))));
-    //     assert_eq!(numbers.next(), Some((123, Region::new(12, 3))));
-    //     assert_eq!(numbers.next(), None);
-    // }
+    #[test]
+    fn finds_number_at_top_left_of_symbol() {
+        let grid = Grid::new(b"123.\n...*\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(3, 1));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 0)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_at_top_center_of_symbol() {
+        let grid = Grid::new(b"123.\n..*.\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(2, 1));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 0)));
+            v
+        });
+        let grid = Grid::new(b"123\n.*.\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(1, 1));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 0)));
+            v
+        });
+        let grid = Grid::new(b"123\n*..\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(0, 1));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 0)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_at_top_right_of_symbol() {
+        let grid = Grid::new(b".123\n*...\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(0, 1));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(1, 0)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_left_of_symbol() {
+        let grid = Grid::new(b"123*\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(3, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 0)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_right_of_symbol() {
+        let grid = Grid::new(b"*123\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(0, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(1, 0)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_at_bottom_left_of_symbol() {
+        let grid = Grid::new(b"...*\n123*\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(3, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 1)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_at_bottom_center_of_symbol() {
+        let grid = Grid::new(b"..*.\n123.\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(2, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 1)));
+            v
+        });
+        let grid = Grid::new(b".*.\n123\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(1, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 1)));
+            v
+        });
+        let grid = Grid::new(b"*..\n123\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(0, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(0, 1)));
+            v
+        });
+    }
+
+    #[test]
+    fn finds_number_at_bottom_right_of_symbol() {
+        let grid = Grid::new(b"*...\n.123\n");
+        let position = grid.symbols().next().unwrap().1;
+        assert_eq!(position, Position::new(0, 0));
+        assert_eq!(numbers_for_symbol(&grid, position), {
+            let mut v = ArrayVec::new();
+            v.push((123, Position::new(1, 1)));
+            v
+        });
+    }
 
     #[test]
     fn test_day3_part1_example() {
