@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use arrayvec::ArrayVec;
 use memchr::memchr_iter;
 
@@ -10,7 +12,7 @@ struct Game {
 impl Game {
     fn from_row(row: &[u8]) -> Self {
         let mut winners = ArrayVec::new();
-        let mut idx = 10;
+        let mut idx = memchr::memchr(b':', row).unwrap() + 2;
         while row[idx] != b'|' {
             winners.push(parse_number(&row[idx..], 2));
             idx += 3;
@@ -26,31 +28,51 @@ impl Game {
         Self { winners, card }
     }
 
-    fn score(&self) -> u32 {
-        let mut score = 0;
-        for value in &self.card {
-            if self.winners.contains(value) {
-                score = if score == 0 { 1 } else { score * 2 }
-            }
-        }
-        score
+    fn matches(&self) -> u8 {
+        self.card
+            .iter()
+            .filter(|value| self.winners.contains(value))
+            .count() as u8
     }
 }
 
-pub fn day4_part1(input: &[u8]) -> u32 {
+fn games(input: &[u8]) -> impl Iterator<Item = Game> + '_ {
     let mut last_start = 0;
-    memchr_iter(b'\n', input)
-        .map(|idx| {
-            let game = Game::from_row(&input[last_start..idx]);
-            last_start = idx + 1;
-            game
+    memchr_iter(b'\n', input).map(move |idx| {
+        let game = Game::from_row(&input[last_start..idx]);
+        last_start = idx + 1;
+        game
+    })
+}
+
+pub fn day4_part1(input: &[u8]) -> u32 {
+    games(input)
+        .map(|game| {
+            let wins = game.matches();
+            if wins > 0 {
+                2_u32.pow((wins - 1).into())
+            } else {
+                0
+            }
         })
-        .map(|game| game.score())
         .sum()
 }
 
-pub fn day4_part2(_input: &[u8]) -> u32 {
-    0
+pub fn day4_part2(input: &[u8]) -> u32 {
+    let mut future_wins = VecDeque::<u32>::new();
+    games(input)
+        .map(|game| {
+            let win_count = game.matches();
+            let scratchcards = future_wins.pop_front().unwrap_or(0) + 1;
+            if future_wins.len() < win_count as usize {
+                future_wins.resize(win_count as usize, 0);
+            }
+            for i in 0..win_count {
+                future_wins[i as usize] += scratchcards;
+            }
+            scratchcards
+        })
+        .sum()
 }
 
 fn parse_number(input: &[u8], count: usize) -> u8 {
@@ -86,17 +108,17 @@ pub mod tests {
         assert_eq!(parse_number(b"313", 2), 31);
     }
 
-    // #[test]
-    // fn test_day4_part1_example() {
-    //     let input = utils::load_example(4);
-    //     assert_eq!(day4_part1(&input), 4361);
-    // }
+    #[test]
+    fn test_day4_part1_example() {
+        let input = utils::load_example(4);
+        assert_eq!(day4_part1(&input), 13);
+    }
 
-    // #[test]
-    // fn test_day4_part2_example() {
-    //     let input = utils::load_example(4);
-    //     assert_eq!(day4_part2(&input), 467835);
-    // }
+    #[test]
+    fn test_day4_part2_example() {
+        let input = utils::load_example(4);
+        assert_eq!(day4_part2(&input), 30);
+    }
 
     #[test]
     fn test_day4_part1_real() {
@@ -104,9 +126,9 @@ pub mod tests {
         assert_eq!(day4_part1(&input), 21105);
     }
 
-    // #[test]
-    // fn test_day4_part2_real() {
-    //     let input = utils::load_real(4);
-    //     assert_eq!(day4_part2(&input), 82818007);
-    // }
+    #[test]
+    fn test_day4_part2_real() {
+        let input = utils::load_real(4);
+        assert_eq!(day4_part2(&input), 5329815);
+    }
 }
