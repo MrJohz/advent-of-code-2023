@@ -1,4 +1,5 @@
 use arrayvec::ArrayVec;
+use memchr::memchr_iter;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Position {
@@ -74,19 +75,23 @@ impl<'a> Grid<'a> {
         self.grid
             .iter()
             .enumerate()
-            .map(|each| {
-                dbg!(each.0, *each.1 as char);
-                each
-            })
             .filter(|(_, c)| is_symbol(c))
             .map(|(index, c)| {
                 let position = Position::new(
-                    dbg!(dbg!(index) % dbg!(self.width + 1)).try_into().unwrap(),
-                    dbg!(index / (self.width + 1)).try_into().unwrap(),
+                    (index % (self.width + 1)).try_into().unwrap(),
+                    (index / (self.width + 1)).try_into().unwrap(),
                 );
-                dbg!(index, position);
                 (*c, position)
             })
+    }
+
+    fn stars(&self) -> impl Iterator<Item = Position> + '_ {
+        memchr_iter(b'*', self.grid).map(|index| {
+            Position::new(
+                (index % (self.width + 1)).try_into().unwrap(),
+                (index / (self.width + 1)).try_into().unwrap(),
+            )
+        })
     }
 }
 
@@ -103,8 +108,18 @@ pub fn day3_part1(input: &[u8]) -> u32 {
     sum
 }
 
-pub fn day3_part2(_: &[u8]) -> u32 {
-    0
+pub fn day3_part2(input: &[u8]) -> u32 {
+    let grid = Grid::new(input);
+    grid.stars()
+        .filter_map(|position| {
+            let numbers = numbers_for_symbol(&grid, position);
+            if numbers.len() == 2 {
+                Some(numbers[0].0 * numbers[1].0)
+            } else {
+                None
+            }
+        })
+        .sum()
 }
 
 fn parse_number(input: &[u8]) -> (u32, usize) {
@@ -340,11 +355,11 @@ pub mod tests {
         assert_eq!(day3_part1(&input), 4361);
     }
 
-    // #[test]
-    // fn test_day3_part2_example() {
-    //     let input = utils::load_example(3);
-    //     assert_eq!(day3_part2(&input), 2286);
-    // }
+    #[test]
+    fn test_day3_part2_example() {
+        let input = utils::load_example(3);
+        assert_eq!(day3_part2(&input), 467835);
+    }
 
     #[test]
     fn test_day3_part1_real() {
@@ -352,9 +367,9 @@ pub mod tests {
         assert_eq!(day3_part1(&input), 539637);
     }
 
-    // #[test]
-    // fn test_day3_part2_real() {
-    //     let input = utils::load_real(3);
-    //     assert_eq!(day3_part2(&input), 78669);
-    // }
+    #[test]
+    fn test_day3_part2_real() {
+        let input = utils::load_real(3);
+        assert_eq!(day3_part2(&input), 82818007);
+    }
 }
