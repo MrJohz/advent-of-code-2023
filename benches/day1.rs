@@ -15,8 +15,8 @@ fn day1(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default()
-        .sample_size(1000)
-        .measurement_time(Duration::from_secs(60 * 2));
+        .sample_size(500)
+        .measurement_time(Duration::from_secs(30));
     targets = day1
 }
 criterion_main!(benches);
