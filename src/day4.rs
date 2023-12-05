@@ -1,17 +1,44 @@
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    simd::{prelude::*, u8x16},
+};
 
 use arrayvec::ArrayVec;
 use memchr::memchr_iter;
 
 #[derive(Debug)]
+struct Winners {
+    winners: u8x16,
+    length: usize,
+}
+
+impl Winners {
+    fn new() -> Self {
+        Self {
+            winners: u8x16::splat(0),
+            length: 0,
+        }
+    }
+
+    fn push(&mut self, winner: u8) {
+        self.winners[self.length] = winner;
+        self.length += 1;
+    }
+
+    fn matches(&self, card: u8) -> bool {
+        self.winners.simd_eq(u8x16::splat(card)).any()
+    }
+}
+
+#[derive(Debug)]
 struct Game {
-    winners: ArrayVec<u8, 10>,
+    winners: Winners,
     card: ArrayVec<u8, 25>,
 }
 
 impl Game {
     fn from_row(row: &[u8]) -> Self {
-        let mut winners = ArrayVec::new();
+        let mut winners = Winners::new();
         let mut idx = memchr::memchr(b':', row).unwrap() + 2;
         while row[idx] != b'|' {
             winners.push(parse_number(&row[idx..], 2));
@@ -31,7 +58,7 @@ impl Game {
     fn matches(&self) -> u8 {
         self.card
             .iter()
-            .filter(|value| self.winners.contains(value))
+            .filter(|value| self.winners.matches(**value))
             .count() as u8
     }
 }
