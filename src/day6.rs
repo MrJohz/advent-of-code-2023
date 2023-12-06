@@ -53,8 +53,6 @@ fn entry(input: &[u8]) -> Entry {
     let (time, bytes_read_l1) = parse_number_with_spaces(&input[9..]);
     let (distance, bytes_read_l2) = parse_number_with_spaces(&input[19 + bytes_read_l1..]);
 
-    dbg!(time, distance, bytes_read_l1, bytes_read_l2);
-
     debug_assert_eq!(bytes_read_l1, bytes_read_l2);
 
     Entry { time, distance }
