@@ -1,5 +1,3 @@
-#![allow(clippy::single_range_in_vec_init)]
-
 use std::ops::Range;
 #[derive(Debug, PartialEq, Eq)]
 struct Seed {
@@ -84,7 +82,7 @@ fn parse_map_line(input: &[u8]) -> (MapLine, usize) {
 }
 
 fn apply_seedmap(map_line: MapLine, seeds: &mut Seeds) {
-    let mut to_add = Vec::new();
+    let mut to_add = None;
     seeds.seeds.retain_mut(|seed| {
         if seed.end <= map_line.source_start || seed.start >= map_line.source_end {
             true
@@ -109,15 +107,16 @@ fn apply_seedmap(map_line: MapLine, seeds: &mut Seeds) {
             seeds.next_stage.push(
                 map_line.source_start + map_line.modifier..map_line.source_end + map_line.modifier,
             );
-            to_add.push(map_line.source_end..seed.end);
+            to_add.replace(map_line.source_end..seed.end);
             seed.end = map_line.source_start;
             true
         } else {
             unreachable!("All cases should be covered")
         }
     });
-
-    seeds.seeds.append(&mut to_add);
+    if let Some(to_add) = to_add {
+        seeds.seeds.push(to_add);
+    }
 }
 
 fn parse_and_apply_maps_to_seed_ranges(input: &[u8], seeds: &mut Seeds) -> usize {
@@ -188,6 +187,8 @@ pub fn day5_part2(input: &[u8]) -> u64 {
 
 #[cfg(test)]
 pub mod tests {
+    #![allow(clippy::single_range_in_vec_init)]
+
     use super::*;
     use crate::utils;
 
@@ -343,6 +344,6 @@ pub mod tests {
     #[test]
     fn test_day5_part2_real() {
         let input = utils::load_real(5);
-        assert_eq!(day5_part2(&input), 5329815);
+        assert_eq!(day5_part2(&input), 78775051);
     }
 }
