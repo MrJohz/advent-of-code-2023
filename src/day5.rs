@@ -56,7 +56,6 @@ fn parse_and_apply_maps(input: &[u8], stage: u8, seeds: &mut [Seed]) -> usize {
     let mut pos = 0;
     while input.len() > pos && input[pos] != b'\n' {
         let (map_line, len) = parse_map_line(&input[pos..]);
-        dbg!(&map_line);
         pos += len;
         for seed in seeds.iter_mut() {
             if seed.stage != stage {
@@ -73,19 +72,17 @@ fn parse_and_apply_maps(input: &[u8], stage: u8, seeds: &mut [Seed]) -> usize {
         seed.stage = stage + 1;
     }
 
-    dbg!(pos)
+    pos
 }
 
 pub fn day5_part1(input: &[u8]) -> u32 {
-    let (mut seeds, mut pos) = dbg!(seeds(input));
+    let (mut seeds, mut pos) = seeds(input);
     let mut stage = 0;
     while input.len() > pos && input[pos] == b'\n' {
         pos += 1;
-        dbg!(String::from_utf8_lossy(&input[pos..]));
         pos += memchr::memchr(b'\n', &input[pos..]).unwrap() + 1;
         pos += parse_and_apply_maps(&input[pos..], stage, &mut seeds);
         stage += 1;
-        dbg!(&seeds);
     }
 
     seeds.into_iter().map(|seed| seed.id).min().unwrap() as u32
