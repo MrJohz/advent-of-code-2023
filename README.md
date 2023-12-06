@@ -2,6 +2,16 @@
 
 > **Goal**: Speed of execution, specifically, that all results are computed in less than 1ms. That means each day has 41.67 microseconds to play with. Timings are done on a Macbook Pro M2 machine, using Criterion.
 
+## Results
+
+| Day | Part 1    | Part 2    | Total     |
+| --- | --------- | --------- | --------- |
+| 1   | 9.5885 µs | 21.704 µs | 31.293 µs |
+| 2   | 3.3542 µs | 5.6706 µs | 9.0248 µs |
+| 3   | 16.477 µs | 7.5925 µs | 24.070 µs |
+| 4   | 14.293 µs | 14.737 µs | 29.030 µs |
+| 5   | 9.5772 µs | 27.905 µs | 37.482 µs |
+
 ## Notes
 
 - [Simd](https://doc.rust-lang.org/std/simd/index.html) helps a lot, if you can find a good place for it. See also [memchr](https://docs.rs/memchr/latest/memchr/).
