@@ -131,7 +131,6 @@ fn is_large_game(input: &[u8]) -> (bool, usize) {
 }
 
 fn find_byte(input: &[u8], byte: u8) -> usize {
-    // memchr::memchr(byte, input).unwrap_or(input.len() - 100)
     let mut index = 0;
     while index < input.len() && input[index] != byte {
         index += 1;
