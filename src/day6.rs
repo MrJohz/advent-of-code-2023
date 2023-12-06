@@ -1,7 +1,7 @@
 pub fn day6_part1(input: &[u8]) -> u64 {
     entries(input)
         .map(evaluate_min_maxes)
-        .map(|(min, max)| 1 + ((max - 0.0001).floor() as u64) - ((min + 0.0001).ceil() as u64))
+        .map(|(min, max)| 1 + ((max).floor() as u64) - ((min).ceil() as u64))
         .product()
 }
 
@@ -9,11 +9,11 @@ pub fn day6_part2(input: &[u8]) -> u64 {
     let entry = entry(input);
     let (min, max) = evaluate_min_maxes(entry);
 
-    1 + ((max - 0.0001).floor() as u64) - ((min + 0.0001).ceil() as u64)
+    1 + ((max).floor() as u64) - ((min).ceil() as u64)
 }
 
 fn evaluate_min_maxes(entry: Entry) -> (f32, f32) {
-    let rooted = (entry.time.powf(2.0) - 4.0 * entry.distance).sqrt();
+    let rooted = (entry.time.powf(2.0) - 4.0 * (entry.distance + 1.0)).sqrt();
     let min = (entry.time - rooted) / 2.0;
     let max = (entry.time + rooted) / 2.0;
     (min, max)
@@ -165,6 +165,6 @@ pub mod tests {
     #[test]
     fn test_day6_part2_real() {
         let input = utils::load_real(6);
-        assert_eq!(day6_part2(&input), 78775051);
+        assert_eq!(day6_part2(&input), 46561107);
     }
 }
