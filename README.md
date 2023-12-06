@@ -11,11 +11,13 @@
 | 3   | 16.477 µs | 7.5925 µs | 24.070 µs |
 | 4   | 14.293 µs | 14.737 µs | 29.030 µs |
 | 5   | 9.5772 µs | 27.905 µs | 37.482 µs |
+| 6   | 0.0591 µs | 0.0394 µs | 0.0985 µs |
 
 ## Notes
 
 - [Simd](https://doc.rust-lang.org/std/simd/index.html) helps a lot, if you can find a good place for it. See also [memchr](https://docs.rs/memchr/latest/memchr/).
 - [ArrayVec](https://docs.rs/arrayvec/latest/arrayvec/) is useful for small arrays where we can avoid heap allocation.
+- Day 6 is a complete freebie! 😅
 
 ## TODOs
 
