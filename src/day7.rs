@@ -41,6 +41,8 @@ fn parse_line<const JOKERS: bool>(input: &[u8]) -> (Hand, u64) {
 fn parse_hand<const JOKERS: bool>(input: &[u8]) -> Hand {
     let mut cards = [0_u8; 5];
     let mut counts = [0_u8; 13];
+    let mut largest = (0, 0);
+    let mut second = (0, 0);
     let mut jokers = 0;
     for entry in cards.iter_mut().enumerate() {
         *entry.1 = match input[entry.0] {
@@ -61,23 +63,20 @@ fn parse_hand<const JOKERS: bool>(input: &[u8]) -> Hand {
         if JOKERS && *entry.1 == 0 {
             jokers += 1;
         } else {
-            counts[*entry.1 as usize - 1] += 1;
+            let count = counts.get_mut(*entry.1 as usize - 1).unwrap();
+            *count += 1;
+            if *entry.1 == largest.0 && *count > largest.1 {
+                largest.1 = *count;
+            } else if *count > largest.1 {
+                second = largest;
+                largest = (*entry.1, *count);
+            } else if *count > second.1 {
+                second = (*entry.1, *count);
+            }
         }
     }
 
-    let mut largest = 0;
-    let mut second = 0;
-
-    for &count in counts.iter() {
-        if count > largest {
-            second = largest;
-            largest = count;
-        } else if count > second {
-            second = count;
-        }
-    }
-
-    let kind = match (largest + jokers, second) {
+    let kind = match (largest.1 + jokers, second.1) {
         (1, _) => HandKind::HighCard,
         (2, 1) => HandKind::OnePair,
         (2, 2) => HandKind::TwoPairs,
