@@ -1,4 +1,5 @@
 #![feature(portable_simd)]
+#![feature(iter_map_windows)]
 
 pub mod utils;
 
@@ -8,3 +9,4 @@ pub mod day3;
 pub mod day4;
 pub mod day5;
 pub mod day6;
+pub mod day7;

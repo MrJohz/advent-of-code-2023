@@ -11,6 +11,7 @@ memchr = "2.6.4"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
+test-case = "3.3.1"
 
 [[bench]]
 name = "day1"
@@ -34,4 +35,8 @@ harness = false
 
 [[bench]]
 name = "day6"
+harness = false
+
+[[bench]]
+name = "day7"
 harness = false
