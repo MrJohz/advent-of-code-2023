@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, fmt::Debug, iter::once};
+use std::{fmt::Debug, iter::once};
 
 pub fn day7_part1(input: &[u8]) -> u64 {
     let mut hands = parse_lines::<false>(input).collect::<Vec<_>>();
