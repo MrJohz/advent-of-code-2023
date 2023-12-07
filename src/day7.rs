@@ -40,8 +40,8 @@ fn parse_line<const JOKERS: bool>(input: &[u8]) -> (Hand, u64) {
 
 fn parse_hand<const JOKERS: bool>(input: &[u8]) -> Hand {
     let mut cards = [0_u8; 5];
-    let mut jokers = 0;
     let mut counts = [0_u8; 13];
+    let mut jokers = 0;
     for entry in cards.iter_mut().enumerate() {
         *entry.1 = match input[entry.0] {
             c @ b'2'..=b'9' => c - b'1',
@@ -65,27 +65,26 @@ fn parse_hand<const JOKERS: bool>(input: &[u8]) -> Hand {
         }
     }
 
-    counts.sort_unstable_by_key(|&count| Reverse(count));
-    let kind = match (jokers, counts[0], counts[1]) {
-        (0, 1, _) => HandKind::HighCard,
-        (0, 2, 1) => HandKind::OnePair,
-        (0, 2, 2) => HandKind::TwoPairs,
-        (0, 3, 1) => HandKind::ThreeOfAKind,
-        (0, 3, 2) => HandKind::FullHouse,
-        (0, 4, _) => HandKind::FourOfAKind,
-        (0, 5, _) => HandKind::FiveOfAKind,
-        (1, 4, _) => HandKind::FiveOfAKind,
-        (1, 3, _) => HandKind::FourOfAKind,
-        (1, 2, 2) => HandKind::FullHouse,
-        (1, 2, _) => HandKind::ThreeOfAKind,
-        (1, 1, _) => HandKind::OnePair,
-        (2, 1, _) => HandKind::ThreeOfAKind,
-        (2, 2, _) => HandKind::FourOfAKind,
-        (2, 3, _) => HandKind::FiveOfAKind,
-        (3, 1, _) => HandKind::FourOfAKind,
-        (3, 2, _) => HandKind::FiveOfAKind,
-        (4, 1, _) => HandKind::FiveOfAKind,
-        (5, _, _) => HandKind::FiveOfAKind,
+    let mut largest = 0;
+    let mut second = 0;
+
+    for &count in counts.iter() {
+        if count > largest {
+            second = largest;
+            largest = count;
+        } else if count > second {
+            second = count;
+        }
+    }
+
+    let kind = match (largest + jokers, second) {
+        (1, _) => HandKind::HighCard,
+        (2, 1) => HandKind::OnePair,
+        (2, 2) => HandKind::TwoPairs,
+        (3, 1) => HandKind::ThreeOfAKind,
+        (3, 2) => HandKind::FullHouse,
+        (4, _) => HandKind::FourOfAKind,
+        (5, _) => HandKind::FiveOfAKind,
         _ => unreachable!("Invalid hand"),
     };
 
