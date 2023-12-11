@@ -1,40 +1,101 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
+
+use num::integer::lcm;
 
 pub fn day8_part1(input: &[u8]) -> u64 {
-    let (input, hashmap) = parse(input);
+    let (instructions, hm) = parse(input);
 
+    #[inline]
+    fn end_node(node: Node) -> bool {
+        node == END
+    }
+
+    steps_to_end(START, &hm, instructions, end_node)
+}
+
+pub fn day8_part2(input: &[u8]) -> u64 {
+    let (instructions, hm) = parse(input);
+
+    #[inline]
+    fn end_node(node: Node) -> bool {
+        node.is_end()
+    }
+
+    hm.keys()
+        .filter(|key| key.is_start())
+        .map(|key| steps_to_end(*key, &hm, instructions, end_node))
+        .reduce(lcm)
+        .unwrap()
+}
+
+fn steps_to_end(
+    start: Node,
+    hm: &HashMap<Node, (Node, Node)>,
+    instructions: &[u8],
+    end_node: fn(Node) -> bool,
+) -> u64 {
     let mut steps = 0;
-    let mut key = b"AAA".as_slice();
+    let mut key = start;
     loop {
-        let (left, right) = hashmap[key];
-        println!(
-            "step {}: {:?} -> {:?} {:?}",
-            steps,
-            String::from_utf8_lossy(key),
-            String::from_utf8_lossy(left),
-            String::from_utf8_lossy(right),
-        );
-        match input[steps % input.len()] {
+        let (left, right) = hm[&key];
+        match instructions[steps % instructions.len()] {
             b'L' => key = left,
             b'R' => key = right,
             _ => unreachable!(
                 "invalid input at step {} ({:?})",
-                steps, input[steps] as char
+                steps, instructions[steps] as char
             ),
         }
         steps += 1;
 
-        if key == b"ZZZ" {
+        if end_node(key) {
             break steps.try_into().unwrap();
         }
     }
 }
 
-pub fn day8_part2(input: &[u8]) -> u64 {
-    0
+const START: Node = Node::new(b"AAA");
+const END: Node = Node::new(b"ZZZ");
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct Node(u16);
+
+impl Node {
+    const fn new(key: &[u8]) -> Self {
+        let mut value = (key[0] - b'A') as u16;
+        value *= 26;
+        value += (key[1] - b'A') as u16;
+        value *= 26;
+        value += (key[2] - b'A') as u16;
+        Self(value)
+    }
+
+    #[inline]
+    fn is_start(&self) -> bool {
+        self.0 % 26 == 0
+    }
+
+    #[inline]
+    fn is_end(&self) -> bool {
+        self.0 % 26 == 25
+    }
 }
 
-fn parse(input: &[u8]) -> (&[u8], HashMap<&[u8], (&[u8], &[u8])>) {
+impl Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let first = (self.0 / 26 / 26) as u8 + b'A';
+        let second = (self.0 / 26 % 26) as u8 + b'A';
+        let third = (self.0 % 26) as u8 + b'A';
+        f.debug_tuple("Node")
+            .field(&format_args!(
+                "{}{}{}",
+                first as char, second as char, third as char
+            ))
+            .finish()
+    }
+}
+
+fn parse(input: &[u8]) -> (&[u8], HashMap<Node, (Node, Node)>) {
     let instructions_end = memchr::memchr(b'\n', input).unwrap();
 
     // TODO: we can probably allocate once by counting the number of lines
@@ -53,10 +114,10 @@ fn parse(input: &[u8]) -> (&[u8], HashMap<&[u8], (&[u8], &[u8])>) {
     (&input[0..instructions_end], hashmap)
 }
 
-fn parse_map_line(input: &[u8]) -> (&[u8], (&[u8], &[u8])) {
-    let key = &input[0..3];
-    let left = &input[7..10];
-    let right = &input[12..15];
+fn parse_map_line(input: &[u8]) -> (Node, (Node, Node)) {
+    let key = Node::new(&input[0..3]);
+    let left = Node::new(&input[7..10]);
+    let right = Node::new(&input[12..15]);
     (key, (left, right))
 }
 
@@ -66,6 +127,14 @@ pub mod tests {
     use crate::utils;
 
     use test_case::test_case;
+
+    #[test_case(b"AAA" => true)]
+    #[test_case(b"AAB" => false)]
+    #[test_case(b"ZZA" => true)]
+    #[test_case(b"ZZZ" => false)]
+    fn test_node_is_start(key: &[u8]) -> bool {
+        Node::new(key).is_start()
+    }
 
     #[test]
     fn test_day8_part1_example_1() {
@@ -79,11 +148,11 @@ pub mod tests {
         assert_eq!(day8_part1(&input), 6);
     }
 
-    // #[test]
-    // fn test_day8_part2_example() {
-    //     let input = utils::load_example(8);
-    //     assert_eq!(day8_part2(&input), 5905);
-    // }
+    #[test]
+    fn test_day8_part2_example_3() {
+        let input = utils::load_example_with_suffix(8, "3");
+        assert_eq!(day8_part2(&input), 6);
+    }
 
     #[test]
     fn test_day8_part1_real() {
@@ -91,9 +160,9 @@ pub mod tests {
         assert_eq!(day8_part1(&input), 13019);
     }
 
-    // #[test]
-    // fn test_day8_part2_real() {
-    //     let input = utils::load_real(8);
-    //     assert_eq!(day8_part2(&input), 253630098);
-    // }
+    #[test]
+    fn test_day8_part2_real() {
+        let input = utils::load_real(8);
+        assert_eq!(day8_part2(&input), 13524038372771);
+    }
 }
