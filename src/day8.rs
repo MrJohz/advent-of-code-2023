@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::fmt::Debug;
 
 use num::integer::lcm;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 pub fn day8_part1(input: &[u8]) -> u64 {
     let (instructions, hm) = parse(input);
@@ -16,28 +17,22 @@ pub fn day8_part1(input: &[u8]) -> u64 {
 pub fn day8_part2(input: &[u8]) -> u64 {
     let (instructions, hm) = parse(input);
 
-    #[inline]
+    #[inline(always)]
     fn end_node(node: Node) -> bool {
         node.is_end()
     }
 
-    hm.keys()
-        .filter(|key| key.is_start())
+    hm.start_keys
+        .par_iter()
         .map(|key| steps_to_end(*key, &hm, instructions, end_node))
-        .reduce(lcm)
-        .unwrap()
+        .reduce(|| 1, lcm)
 }
 
-fn steps_to_end(
-    start: Node,
-    hm: &HashMap<Node, (Node, Node)>,
-    instructions: &[u8],
-    end_node: fn(Node) -> bool,
-) -> u64 {
+fn steps_to_end(start: Node, hm: &NodeMap, instructions: &[u8], end_node: fn(Node) -> bool) -> u64 {
     let mut steps = 0;
     let mut key = start;
     loop {
-        let (left, right) = hm[&key];
+        let (left, right) = hm.get(key).unwrap();
         match instructions[steps % instructions.len()] {
             b'L' => key = left,
             b'R' => key = right,
@@ -58,7 +53,7 @@ const START: Node = Node::new(b"AAA");
 const END: Node = Node::new(b"ZZZ");
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct Node(u16);
+struct Node(u16, bool);
 
 impl Node {
     const fn new(key: &[u8]) -> Self {
@@ -67,7 +62,7 @@ impl Node {
         value += (key[1] - b'A') as u16;
         value *= 26;
         value += (key[2] - b'A') as u16;
-        Self(value)
+        Self(value, key[2] == b'Z')
     }
 
     #[inline]
@@ -75,9 +70,9 @@ impl Node {
         self.0 % 26 == 0
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_end(&self) -> bool {
-        self.0 % 26 == 25
+        self.1
     }
 }
 
@@ -95,12 +90,36 @@ impl Debug for Node {
     }
 }
 
-fn parse(input: &[u8]) -> (&[u8], HashMap<Node, (Node, Node)>) {
+#[derive(Debug)]
+struct NodeMap {
+    start_keys: Vec<Node>,
+    nodes: [Option<(Node, Node)>; 26 * 26 * 26],
+}
+
+impl NodeMap {
+    fn get(&self, key: Node) -> Option<(Node, Node)> {
+        self.nodes[key.0 as usize]
+    }
+}
+
+impl FromIterator<(Node, (Node, Node))> for NodeMap {
+    fn from_iter<T: IntoIterator<Item = (Node, (Node, Node))>>(iter: T) -> Self {
+        let mut nodes = [None; 26 * 26 * 26];
+        let mut start_keys = Vec::new();
+        for (key, (left, right)) in iter {
+            if key.is_start() {
+                start_keys.push(key);
+            }
+            nodes[key.0 as usize] = Some((left, right));
+        }
+        Self { start_keys, nodes }
+    }
+}
+
+fn parse(input: &[u8]) -> (&[u8], NodeMap) {
     let instructions_end = memchr::memchr(b'\n', input).unwrap();
 
-    // TODO: we can probably allocate once by counting the number of lines
-    // TODO: we can probably avoid allocation altogether using a fixed-sized array a PHF
-    let hashmap = (0_usize..)
+    let map = (0_usize..)
         .map(|i| {
             (
                 i * 17 + instructions_end + 2,
@@ -111,7 +130,7 @@ fn parse(input: &[u8]) -> (&[u8], HashMap<Node, (Node, Node)>) {
         .map(|(start, end)| parse_map_line(&input[start..end]))
         .collect();
 
-    (&input[0..instructions_end], hashmap)
+    (&input[0..instructions_end], map)
 }
 
 fn parse_map_line(input: &[u8]) -> (Node, (Node, Node)) {

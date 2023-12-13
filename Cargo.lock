@@ -31,6 +31,7 @@ dependencies = [
  "criterion",
  "memchr",
  "num",
+ "rayon",
  "test-case",
 ]
 
