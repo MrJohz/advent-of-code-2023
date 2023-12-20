@@ -23,3 +23,5 @@
 
 - `find_byte` for day 2 produces odd errors with `memchr` when trying to find a specific byte. Explore?
 - Day 5: It may be possible to fuse ranges together when their ends are equal. (e.g. if 10..50 and 50..100 are both present in the list of ranges, then they can be fused to create 10..100) This would reduce the amount of data that needs to be processed, but would require sorting the arrays, or keeping them in order while updating them.
+- Day 8: ???
+- Day 9: Complexity optimisation: currently, we build a stack containing the difference between n and n', the difference between (n - n') and (n' and n''), etc. However, the end of this stack is always zero once a stable set of differences has been found. We could therefore stop building the stack once we reach zero, and then use the stack to calculate the final value. However, there are situations where a given layer in the stack may appear to be zero, but becomes nonzero later. (e.g. third example for day9: the 3rd layer goes (0, 2, 4, 6) - the first zero here does not indicate that we have a stable set of differences.)
