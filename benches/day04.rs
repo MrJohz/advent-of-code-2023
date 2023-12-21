@@ -5,10 +5,10 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 fn day4(c: &mut Criterion) {
     let text = aoc_2023::utils::load_real(4);
     c.bench_function("day 4 part 1", |b| {
-        b.iter(|| aoc_2023::day4::day4_part1(black_box(&text)))
+        b.iter(|| aoc_2023::day04::day4_part1(black_box(&text)))
     });
     c.bench_function("day 4 part 2", |b| {
-        b.iter(|| aoc_2023::day4::day4_part2(black_box(&text)))
+        b.iter(|| aoc_2023::day04::day4_part2(black_box(&text)))
     });
 }
 

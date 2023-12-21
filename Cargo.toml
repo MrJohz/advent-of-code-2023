@@ -16,37 +16,37 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 test-case = "3.3.1"
 
 [[bench]]
-name = "day1"
+name = "day01"
 harness = false
 
 [[bench]]
-name = "day2"
+name = "day02"
 harness = false
 
 [[bench]]
-name = "day3"
+name = "day03"
 harness = false
 
 [[bench]]
-name = "day4"
+name = "day04"
 harness = false
 
 [[bench]]
-name = "day5"
+name = "day05"
 harness = false
 
 [[bench]]
-name = "day6"
+name = "day06"
 harness = false
 
 [[bench]]
-name = "day7"
+name = "day07"
 harness = false
 
 [[bench]]
-name = "day8"
+name = "day08"
 harness = false
 
 [[bench]]
-name = "day9"
+name = "day09"
 harness = false
