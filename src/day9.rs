@@ -170,27 +170,27 @@ pub mod tests {
         extrapolate(&mut input)
     }
 
-    // #[test]
-    // fn test_day9_part1_example() {
-    //     let input = utils::load_example(9);
-    //     assert_eq!(day9_part1(&input), 114);
-    // }
+    #[test]
+    fn test_day9_part1_example() {
+        let input = utils::load_example(9);
+        assert_eq!(day9_part1(&input), 114);
+    }
 
-    // #[test]
-    // fn test_day9_part2_example() {
-    //     let input = utils::load_example(9);
-    //     assert_eq!(day9_part2(&input), 2);
-    // }
+    #[test]
+    fn test_day9_part2_example() {
+        let input = utils::load_example(9);
+        assert_eq!(day9_part2(&input), 2);
+    }
 
-    // #[test]
-    // fn test_day9_part1_real() {
-    //     let input = utils::load_real(9);
-    //     assert_eq!(day9_part1(&input), 1969958987);
-    // }
+    #[test]
+    fn test_day9_part1_real() {
+        let input = utils::load_real(9);
+        assert_eq!(day9_part1(&input), 1969958987);
+    }
 
-    // #[test]
-    // fn test_day9_part2_real() {
-    //     let input = utils::load_real(9);
-    //     assert_eq!(day9_part2(&input), 1068);
-    // }
+    #[test]
+    fn test_day9_part2_real() {
+        let input = utils::load_real(9);
+        assert_eq!(day9_part2(&input), 1068);
+    }
 }
